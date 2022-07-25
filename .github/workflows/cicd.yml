@@ -1,0 +1,44 @@
+name: "ci-cd"
+on: [push, pull_request]
+
+jobs:
+  setup-build:
+    runs-on: ${{ matrix.os }}
+    name: setup-build
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            cuda: "11.7"
+            gcc: 10
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: action-cuda-compiler
+        uses: slabstech/action-cuda-compiler-python@v0.0.1
+        with:
+          cuda: ${{ matrix.cuda }}
+          gcc: ${{ matrix.gcc }}
+
+  push-deploy:
+    name: push-deploy
+    runs-on : ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - name: deploy-container-to-registry-client
+        uses: slabstech/action-deploy-container-to-registry@v0.0.1
+        with:
+          docker-username: ${{ secrets.DOCKER_USERNAME }}
+          docker-password: ${{ secrets.DOCKER_PASSWORD }}
+          github-actor: ${{ github.actor }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-repository: ${{ github.repository }}
+          project-name: IDH
+          service-name: server
+          dockerfile-path: ./Dockerfile
